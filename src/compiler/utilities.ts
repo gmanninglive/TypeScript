@@ -606,7 +606,7 @@ export function createCommentDirectivesMap(sourceFile: SourceFile, commentDirect
 
     const usedLines = new Map<string, boolean>();
 
-    return { getUnusedExpectations, markUsed };
+    return { getIgnoreBlocks, getUnusedExpectations, hasIgnoreBlocks, markUsed };
 
     function getUnusedExpectations() {
         return arrayFrom(directivesByLine.entries())
@@ -615,12 +615,37 @@ export function createCommentDirectivesMap(sourceFile: SourceFile, commentDirect
     }
 
     function markUsed(line: number) {
-        if (!directivesByLine.has(`${line}`)) {
+        const directiveFound = directivesByLine.get(`${line}`);
+        const skipLine = !directiveFound
+                    || directiveFound.type === CommentDirectiveType.IgnoreStart
+                    || directiveFound.type === CommentDirectiveType.IgnoreEnd;
+        if (skipLine) {
+            usedLines.set(`${line}`, true);
             return false;
         }
 
         usedLines.set(`${line}`, true);
         return true;
+    }
+
+    function getIgnoreBlocks(){
+        const directives = arrayFrom(directivesByLine.entries());
+        const starts = directives.filter(([_, directive]) => directive.type === CommentDirectiveType.IgnoreStart);
+        const ends = directives.filter(([_, directive]) => directive.type === CommentDirectiveType.IgnoreEnd);
+
+        const aggregate = starts.map(([line, _1], idx) => {
+            const [endLine, _2] = ends[idx];
+            const hasMatchingEnd = endLine && +endLine > +line;
+            const matchingEnd = hasMatchingEnd ? +endLine : undefined;
+            return { start: +line, end: matchingEnd };
+        });
+
+        return aggregate;
+    }
+
+    function hasIgnoreBlocks(){
+        return arrayFrom(directivesByLine.entries())
+            .some(([_, directive]) => directive.type === CommentDirectiveType.IgnoreStart);
     }
 }
 

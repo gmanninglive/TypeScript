@@ -2435,7 +2435,10 @@ export function createProgram(rootNamesOrOptions: readonly string[] | CreateProg
         // Diagnostics are only reported if there is no comment directive preceding them
         // This will modify the directives map by marking "used" ones with a corresponding diagnostic
         const directives = createCommentDirectivesMap(sourceFile, commentDirectives);
-        const diagnostics = flatDiagnostics.filter(diagnostic => markPrecedingCommentDirectiveLine(diagnostic, directives) === -1);
+        const ignoreBlocksRemoved = directives.hasIgnoreBlocks()
+                            ? flatDiagnostics.filter(diagnostic => markIgnoreBlockCommentDirectiveLine(diagnostic, directives.getIgnoreBlocks()) === -1)
+                            : flatDiagnostics;
+        const diagnostics = ignoreBlocksRemoved.filter(diagnostic => markPrecedingCommentDirectiveLine(diagnostic, directives) === -1);
 
         return { diagnostics, directives };
     }
@@ -2444,6 +2447,25 @@ export function createProgram(rootNamesOrOptions: readonly string[] | CreateProg
         return runWithCancellationToken(() => {
             return getTypeChecker().getSuggestionDiagnostics(sourceFile, cancellationToken);
         });
+    }
+
+    function markIgnoreBlockCommentDirectiveLine(diagnostic: Diagnostic, ignoreBlocks: { start: number; end: number | undefined }[]) {
+        const { file, start } = diagnostic;
+        if (!file) {
+            return -1;
+        }
+
+        const lineStarts = getLineStarts(file);
+        const line = computeLineAndCharacterOfPosition(lineStarts, start!).line;
+        for(const { start, end } of ignoreBlocks) {
+            if(line > start){
+                if(!end || line < end){
+                    return line;
+                }
+            }
+        }
+
+        return -1;
     }
 
     /**

@@ -4130,6 +4130,8 @@ export interface CommentDirective {
 export const enum CommentDirectiveType {
     ExpectError,
     Ignore,
+    IgnoreStart,
+    IgnoreEnd
 }
 
 /** @internal */
@@ -9377,6 +9379,8 @@ export interface PragmaMap extends Map<string, PragmaPseudoMap[keyof PragmaPseud
 export interface CommentDirectivesMap {
     getUnusedExpectations(): CommentDirective[];
     markUsed(matchedLine: number): boolean;
+    getIgnoreBlocks(): { start: number, end: number | undefined }[]
+    hasIgnoreBlocks(): boolean;
 }
 
 export interface UserPreferences {

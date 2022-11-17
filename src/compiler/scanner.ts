@@ -296,7 +296,7 @@ const unicodeESNextIdentifierPart = [48, 57, 65, 90, 95, 95, 97, 122, 170, 170, 
 /**
  * Test for whether a single line comment with leading whitespace trimmed's text contains a directive.
  */
-const commentDirectiveRegExSingleLine = /^\/\/\/?\s*@(ts-expect-error|ts-ignore)/;
+const commentDirectiveRegExSingleLine = /^\/\/\/?\s*@(ts-expect-error|ts-ignore|ts-start-ignore|ts-end-ignore)/;
 
 /**
  * Test for whether a multi-line comment with leading whitespace trimmed's last line contains a directive.
@@ -2256,6 +2256,12 @@ export function createScanner(languageVersion: ScriptTarget,
 
             case "ts-ignore":
                 return CommentDirectiveType.Ignore;
+
+            case "ts-start-ignore":
+                return CommentDirectiveType.IgnoreStart;
+
+            case "ts-end-ignore":
+                return CommentDirectiveType.IgnoreEnd;
         }
 
         return undefined;
